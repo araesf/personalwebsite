@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ara - Personal Website</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <div class="nav-links">
+                <a href="#about" class="nav-link">ABOUT ME</a>
+                <a href="#experiences" class="nav-link">EXPERIENCES</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Animated Topographic Background -->
+    <canvas id="topoCanvas"></canvas>
+
+    <main class="main-content">
+        <div class="hero-section">
+            <div class="profile-container">
+                <img src="IMG_6966.jpeg" alt="Ara's Profile Picture" class="profile-image">
+            </div>
+            <h1 class="hero-title">hello, i'm ara</h1>
+        </div>
+    </main>
+
+    <!-- About Me Section -->
+    <section id="about" class="content-section">
+        <div class="section-container">
+            <h2 class="section-title">About Me</h2>
+            <div class="section-content">
+                <p>i'm 20 and currently based in los angeles, california.</p>
+                <p>when building products, i'm super interested in building awesome things that users can interact with.</p>
+                <p>i'm also super intersted in machine learning! my research interests include post-training optimization, agentic AI, model compression, and model distillation.</p>
+                <p>i also have a <a href="https://medium.com/@ara.esfarjani" target="_blank">blog</a> but i don't really post much on it.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Experiences Section -->
+    <section id="experiences" class="content-section">
+        <div class="section-container">
+            <h2 class="section-title">Experiences</h2>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <img src="https://www.google.com/s2/favicons?domain=noise.xyz&sz=128" alt="Noise Labs" class="timeline-icon">
+                    <div class="timeline-content">
+                        <a href="https://www.noise.xyz" target="_blank" class="timeline-company">noise labs</a>
+                        <span class="timeline-desc">full-stack software engineer</span>
+                    </div>
+                    <span class="timeline-year">2025</span>
+                </div>
+                <div class="timeline-item">
+                    <img src="https://www.google.com/s2/favicons?domain=usc.edu&sz=128" alt="NSIP Lab" class="timeline-icon">
+                    <div class="timeline-content">
+                        <a href="https://nseip.usc.edu" target="_blank" class="timeline-company">nsip lab</a>
+                        <span class="timeline-desc">machine learning researcher</span>
+                    </div>
+                    <span class="timeline-year">2025</span>
+                </div>
+                <div class="timeline-item">
+                    <img src="celestial-icon.jpg" alt="Celestial AI" class="timeline-icon">
+                    <div class="timeline-content">
+                        <a href="https://www.celestial.ai" target="_blank" class="timeline-company">celestial ai</a>
+                        <span class="timeline-desc">machine learning engineer intern</span>
+                    </div>
+                    <span class="timeline-year">2025</span>
+                </div>
+                <div class="timeline-item">
+                    <img src="https://www.google.com/s2/favicons?domain=pivotal.aero&sz=128" alt="Pivotal" class="timeline-icon">
+                    <div class="timeline-content">
+                        <a href="https://pivotal.aero" target="_blank" class="timeline-company">pivotal.aero</a>
+                        <span class="timeline-desc">full-stack software engineer intern</span>
+                    </div>
+                    <span class="timeline-year">2024</span>
+                </div>
+                <div class="timeline-item">
+                    <img src="https://www.google.com/s2/favicons?domain=usc.edu&sz=128" alt="USC" class="timeline-icon">
+                    <div class="timeline-content">
+                        <a href="https://www.usc.edu" target="_blank" class="timeline-company">usc</a>
+                        <span class="timeline-desc">b.s. / m.s. computer engineering & computer science</span>
+                    </div>
+                    <span class="timeline-year">exp 2027</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-links">
+            <a href="https://www.linkedin.com/in/ara-esfarjani/" target="_blank" class="footer-link">LINKEDIN</a>
+            <a href="https://github.com/araesf/" target="_blank" class="footer-link">GITHUB</a>
+            <a href="mailto:ara@example.com" class="footer-link">EMAIL</a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
