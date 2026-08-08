@@ -79,19 +79,19 @@ void main() {
     float n = fbm(p * 1.35 + q * 1.9 + uDrift * 0.5);
     n = smoothstep(0.30, 0.74, n);
 
-    // Quantize to discrete steps — a crisp dither, never a smooth gradient.
-    float v = clamp(floor(n * 5.0) / 4.0, 0.0, 1.0);
+    // Anchor the field to the right edge and taper it off toward the left,
+    // so it thins out into the baseline grid instead of ending on a hard line.
+    n *= smoothstep(0.14, 0.82, center.x / uRes.x);
 
-    // The grid covers the whole page, but only the right half carries the
-    // field — left of centre stays a flat, even baseline of dots.
-    v *= step(uRes.x * 0.5, center.x);
+    // Quantize after the taper: dot sizes stay on discrete steps.
+    float v = clamp(floor(n * 8.0) / 7.0, 0.0, 1.0);
 
     // Square dot, antialiased at the edge.
     float half_ = 0.5 * uPitch * mix(0.24, 0.86, v);
     vec2 d = abs(gl_FragCoord.xy - center);
     float mask = 1.0 - smoothstep(half_ - 1.0, half_ + 1.0, max(d.x, d.y));
 
-    float density = mask * mix(0.11, 0.30, v);
+    float density = mask * mix(0.11, 0.34, v);
     gl_FragColor = vec4(mix(uBg, uInk, density), 1.0);
 }
 `;
