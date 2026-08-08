@@ -1,305 +1,207 @@
 // ============================================
-// Simplex Noise Implementation
+// Halftone-dithered backdrop
+//
+// A full-screen WebGL quad. A domain-warped fbm field is sampled once per
+// grid cell, and each cell is drawn as a square whose size and ink density
+// track that sample — the newsprint-dot look, generated procedurally so
+// there is no video or image to ship.
 // ============================================
-class SimplexNoise {
-    constructor(seed = Math.random()) {
-        this.p = new Uint8Array(256);
-        this.perm = new Uint8Array(512);
-        this.permMod12 = new Uint8Array(512);
 
-        for (let i = 0; i < 256; i++) {
-            this.p[i] = i;
-        }
-
-        // Fisher-Yates shuffle with seed
-        let n = 256;
-        let random = this.seededRandom(seed);
-        while (n > 1) {
-            let k = Math.floor(random() * n);
-            n--;
-            let temp = this.p[n];
-            this.p[n] = this.p[k];
-            this.p[k] = temp;
-        }
-
-        for (let i = 0; i < 512; i++) {
-            this.perm[i] = this.p[i & 255];
-            this.permMod12[i] = this.perm[i] % 12;
-        }
-
-        this.grad3 = new Float32Array([
-            1,1,0, -1,1,0, 1,-1,0, -1,-1,0,
-            1,0,1, -1,0,1, 1,0,-1, -1,0,-1,
-            0,1,1, 0,-1,1, 0,1,-1, 0,-1,-1
-        ]);
-
-        this.F2 = 0.5 * (Math.sqrt(3) - 1);
-        this.G2 = (3 - Math.sqrt(3)) / 6;
-    }
-
-    seededRandom(seed) {
-        return function() {
-            seed = (seed * 9301 + 49297) % 233280;
-            return seed / 233280;
-        };
-    }
-
-    noise2D(x, y) {
-        const { perm, permMod12, grad3, F2, G2 } = this;
-
-        let n0, n1, n2;
-
-        let s = (x + y) * F2;
-        let i = Math.floor(x + s);
-        let j = Math.floor(y + s);
-
-        let t = (i + j) * G2;
-        let X0 = i - t;
-        let Y0 = j - t;
-        let x0 = x - X0;
-        let y0 = y - Y0;
-
-        let i1, j1;
-        if (x0 > y0) { i1 = 1; j1 = 0; }
-        else { i1 = 0; j1 = 1; }
-
-        let x1 = x0 - i1 + G2;
-        let y1 = y0 - j1 + G2;
-        let x2 = x0 - 1 + 2 * G2;
-        let y2 = y0 - 1 + 2 * G2;
-
-        let ii = i & 255;
-        let jj = j & 255;
-
-        let gi0 = permMod12[ii + perm[jj]] * 3;
-        let gi1 = permMod12[ii + i1 + perm[jj + j1]] * 3;
-        let gi2 = permMod12[ii + 1 + perm[jj + 1]] * 3;
-
-        let t0 = 0.5 - x0*x0 - y0*y0;
-        if (t0 < 0) n0 = 0;
-        else {
-            t0 *= t0;
-            n0 = t0 * t0 * (grad3[gi0] * x0 + grad3[gi0 + 1] * y0);
-        }
-
-        let t1 = 0.5 - x1*x1 - y1*y1;
-        if (t1 < 0) n1 = 0;
-        else {
-            t1 *= t1;
-            n1 = t1 * t1 * (grad3[gi1] * x1 + grad3[gi1 + 1] * y1);
-        }
-
-        let t2 = 0.5 - x2*x2 - y2*y2;
-        if (t2 < 0) n2 = 0;
-        else {
-            t2 *= t2;
-            n2 = t2 * t2 * (grad3[gi2] * x2 + grad3[gi2 + 1] * y2);
-        }
-
-        return 70 * (n0 + n1 + n2);
-    }
-}
-
-// ============================================
-// Topographic Animation
-// ============================================
-const canvas = document.getElementById('topoCanvas');
-const ctx = canvas.getContext('2d');
-const noise = new SimplexNoise(42);
-
-let width, height;
-let time = 0;
-let animationId;
-
-// Configuration
-const config = {
-    scale: 0.003,          // Noise scale (smaller = larger features)
-    speed: 0.0003,         // Animation speed
-    levels: 12,            // Number of contour levels
-    lineWidth: 1,          // Line thickness
-    lineColor: 'rgba(255, 255, 255, 0.08)', // Subtle white lines
-    cellSize: 8            // Resolution of marching squares
+const PALETTE = {
+    bg: [0.969, 0.965, 0.949],   // #f7f6f2
+    ink: [0.055, 0.051, 0.043]   // near-black
 };
 
-function resize() {
-    width = canvas.width = window.innerWidth;
-    height = canvas.height = window.innerHeight;
+const PITCH = 9;        // dot cell size, CSS px
+const MAX_DPR = 2;
+
+const VERT = `
+attribute vec2 aPos;
+void main() {
+    gl_Position = vec4(aPos, 0.0, 1.0);
+}
+`;
+
+const FRAG = `
+precision highp float;
+
+uniform vec2  uRes;
+uniform vec2  uDrift;
+uniform float uPitch;
+uniform vec3  uBg;
+uniform vec3  uInk;
+
+float hash(vec2 p) {
+    p = fract(p * vec2(123.34, 456.21));
+    p += dot(p, p + 45.32);
+    return fract(p.x * p.y);
 }
 
-// Marching squares for contour lines
-function getNoiseValue(x, y, t) {
-    // Layer multiple octaves for more interesting patterns
-    let value = 0;
-    value += noise.noise2D(x * config.scale + t, y * config.scale) * 1;
-    value += noise.noise2D(x * config.scale * 2 + t * 0.5, y * config.scale * 2) * 0.5;
-    value += noise.noise2D(x * config.scale * 4 + t * 0.25, y * config.scale * 4) * 0.25;
-    return value / 1.75; // Normalize to roughly -1 to 1
+float vnoise(vec2 p) {
+    vec2 i = floor(p);
+    vec2 f = fract(p);
+    vec2 u = f * f * (3.0 - 2.0 * f);
+    float a = hash(i);
+    float b = hash(i + vec2(1.0, 0.0));
+    float c = hash(i + vec2(0.0, 1.0));
+    float d = hash(i + vec2(1.0, 1.0));
+    return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
 }
 
-function lerp(a, b, t) {
-    return a + (b - a) * t;
+float fbm(vec2 p) {
+    float v = 0.0;
+    float a = 0.5;
+    mat2 rot = mat2(0.8, 0.6, -0.6, 0.8);
+    for (int i = 0; i < 5; i++) {
+        v += a * vnoise(p);
+        p = rot * p * 2.02;
+        a *= 0.5;
+    }
+    return v;
 }
 
-function drawContourLine(x1, y1, x2, y2) {
-    ctx.beginPath();
-    ctx.moveTo(x1, y1);
-    ctx.lineTo(x2, y2);
-    ctx.stroke();
+void main() {
+    // Sample the field once per cell so every dot in a cell agrees.
+    vec2 cell = floor(gl_FragCoord.xy / uPitch);
+    vec2 center = (cell + 0.5) * uPitch;
+
+
+    vec2 p = center / uRes.y;          // aspect-correct
+
+    // uDrift travels a bounded loop, so these coordinates never grow. Letting
+    // elapsed time march into them directly costs fp32 precision inside
+    // hash(); the field flattens and the quantizer below then snaps the whole
+    // right half to a single level — one solid slab.
+    vec2 q = vec2(
+        fbm(p * 1.4 + uDrift),
+        fbm(p * 1.4 + uDrift.yx + vec2(5.2, 1.3))
+    );
+    float n = fbm(p * 1.35 + q * 1.9 + uDrift * 0.5);
+    n = smoothstep(0.30, 0.74, n);
+
+    // Quantize to discrete steps — a crisp dither, never a smooth gradient.
+    float v = clamp(floor(n * 5.0) / 4.0, 0.0, 1.0);
+
+    // The grid covers the whole page, but only the right half carries the
+    // field — left of centre stays a flat, even baseline of dots.
+    v *= step(uRes.x * 0.5, center.x);
+
+    // Square dot, antialiased at the edge.
+    float half_ = 0.5 * uPitch * mix(0.24, 0.86, v);
+    vec2 d = abs(gl_FragCoord.xy - center);
+    float mask = 1.0 - smoothstep(half_ - 1.0, half_ + 1.0, max(d.x, d.y));
+
+    float density = mask * mix(0.11, 0.30, v);
+    gl_FragColor = vec4(mix(uBg, uInk, density), 1.0);
+}
+`;
+
+function compile(gl, type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+        console.warn('shader:', gl.getShaderInfoLog(shader));
+        gl.deleteShader(shader);
+        return null;
+    }
+    return shader;
 }
 
-function marchingSquares(threshold) {
-    const cellSize = config.cellSize;
-    const cols = Math.ceil(width / cellSize) + 1;
-    const rows = Math.ceil(height / cellSize) + 1;
+function initBackdrop() {
+    const canvas = document.getElementById('bg');
+    if (!canvas) return;
 
-    // Pre-compute noise values
-    const values = [];
-    for (let j = 0; j < rows; j++) {
-        values[j] = [];
-        for (let i = 0; i < cols; i++) {
-            values[j][i] = getNoiseValue(i * cellSize, j * cellSize, time);
+    const gl = canvas.getContext('webgl', { antialias: false, alpha: false });
+    if (!gl) return; // page still reads fine on the flat background
+
+    const vs = compile(gl, gl.VERTEX_SHADER, VERT);
+    const fs = compile(gl, gl.FRAGMENT_SHADER, FRAG);
+    if (!vs || !fs) return;
+
+    const program = gl.createProgram();
+    gl.attachShader(program, vs);
+    gl.attachShader(program, fs);
+    gl.linkProgram(program);
+    if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+        console.warn('program:', gl.getProgramInfoLog(program));
+        return;
+    }
+    gl.useProgram(program);
+
+    // Single triangle covering the viewport.
+    gl.bindBuffer(gl.ARRAY_BUFFER, gl.createBuffer());
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array([-1, -1, 3, -1, -1, 3]), gl.STATIC_DRAW);
+    const aPos = gl.getAttribLocation(program, 'aPos');
+    gl.enableVertexAttribArray(aPos);
+    gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+    const uRes = gl.getUniformLocation(program, 'uRes');
+    const uDrift = gl.getUniformLocation(program, 'uDrift');
+    const uPitch = gl.getUniformLocation(program, 'uPitch');
+
+    gl.uniform3fv(gl.getUniformLocation(program, 'uBg'), PALETTE.bg);
+    gl.uniform3fv(gl.getUniformLocation(program, 'uInk'), PALETTE.ink);
+
+    let dpr = 1;
+
+    function resize() {
+        dpr = Math.min(window.devicePixelRatio || 1, MAX_DPR);
+        const w = Math.floor(canvas.clientWidth * dpr);
+        const h = Math.floor(canvas.clientHeight * dpr);
+        if (canvas.width === w && canvas.height === h) return false;
+        canvas.width = w;
+        canvas.height = h;
+        gl.viewport(0, 0, w, h);
+        gl.uniform2f(uRes, w, h);
+        gl.uniform1f(uPitch, PITCH * dpr);
+        return true;
+    }
+
+    // Cos/sin keep the drift inside a bounded loop, and JS computes it in
+    // double precision, so the shader never sees a large coordinate.
+    function render(seconds) {
+        const t = seconds * 0.035;
+        gl.uniform2f(uDrift, Math.cos(t) * 0.8, Math.sin(t * 0.8) * 0.8);
+        gl.drawArrays(gl.TRIANGLES, 0, 3);
+    }
+
+    resize();
+
+    const still = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+    if (still.matches) {
+        render(0);
+        window.addEventListener('resize', () => { resize(); render(0); });
+        return;
+    }
+
+    let frame = null;
+
+    function loop(now) {
+        resize();
+        render(now / 1000);
+        frame = requestAnimationFrame(loop);
+    }
+
+    function start() {
+        if (frame === null) frame = requestAnimationFrame(loop);
+    }
+
+    function stop() {
+        if (frame !== null) {
+            cancelAnimationFrame(frame);
+            frame = null;
         }
     }
 
-    // Process each cell
-    for (let j = 0; j < rows - 1; j++) {
-        for (let i = 0; i < cols - 1; i++) {
-            const x = i * cellSize;
-            const y = j * cellSize;
-
-            // Get corner values
-            const a = values[j][i];
-            const b = values[j][i + 1];
-            const c = values[j + 1][i + 1];
-            const d = values[j + 1][i];
-
-            // Determine case (16 possible configurations)
-            let caseIndex = 0;
-            if (a > threshold) caseIndex |= 1;
-            if (b > threshold) caseIndex |= 2;
-            if (c > threshold) caseIndex |= 4;
-            if (d > threshold) caseIndex |= 8;
-
-            // Skip empty or full cells
-            if (caseIndex === 0 || caseIndex === 15) continue;
-
-            // Interpolate edge positions
-            const top = lerp(x, x + cellSize, (threshold - a) / (b - a));
-            const right = lerp(y, y + cellSize, (threshold - b) / (c - b));
-            const bottom = lerp(x, x + cellSize, (threshold - d) / (c - d));
-            const left = lerp(y, y + cellSize, (threshold - a) / (d - a));
-
-            // Draw lines based on case
-            switch (caseIndex) {
-                case 1:
-                case 14:
-                    drawContourLine(x, left, top, y);
-                    break;
-                case 2:
-                case 13:
-                    drawContourLine(top, y, x + cellSize, right);
-                    break;
-                case 3:
-                case 12:
-                    drawContourLine(x, left, x + cellSize, right);
-                    break;
-                case 4:
-                case 11:
-                    drawContourLine(x + cellSize, right, bottom, y + cellSize);
-                    break;
-                case 5:
-                    drawContourLine(x, left, top, y);
-                    drawContourLine(x + cellSize, right, bottom, y + cellSize);
-                    break;
-                case 6:
-                case 9:
-                    drawContourLine(top, y, bottom, y + cellSize);
-                    break;
-                case 7:
-                case 8:
-                    drawContourLine(x, left, bottom, y + cellSize);
-                    break;
-                case 10:
-                    drawContourLine(x, left, bottom, y + cellSize);
-                    drawContourLine(top, y, x + cellSize, right);
-                    break;
-            }
-        }
-    }
-}
-
-function draw() {
-    // Clear canvas with dark background
-    ctx.fillStyle = '#1a1a1a';
-    ctx.fillRect(0, 0, width, height);
-
-    // Set line style
-    ctx.strokeStyle = config.lineColor;
-    ctx.lineWidth = config.lineWidth;
-    ctx.lineCap = 'round';
-
-    // Draw contour lines at different threshold levels
-    for (let i = 0; i < config.levels; i++) {
-        const threshold = -1 + (2 / config.levels) * i;
-        marchingSquares(threshold);
-    }
-
-    // Update time for animation
-    time += config.speed;
-
-    animationId = requestAnimationFrame(draw);
-}
-
-// ============================================
-// Page Interactions
-// ============================================
-
-// Smooth scrolling for navigation links
-document.querySelectorAll('.nav-link').forEach(link => {
-    link.addEventListener('click', function(e) {
-        e.preventDefault();
-        const targetId = this.getAttribute('href');
-        const targetSection = document.querySelector(targetId);
-
-        if (targetSection) {
-            targetSection.scrollIntoView({
-                behavior: 'smooth',
-                block: 'start'
-            });
-        }
+    // Don't burn cycles on a hidden tab.
+    document.addEventListener('visibilitychange', () => {
+        document.hidden ? stop() : start();
     });
-});
 
-// Fade-in animation on page load
-window.addEventListener('load', function() {
-    const heroSection = document.querySelector('.hero-section');
-    if (heroSection) {
-        heroSection.style.opacity = '0';
-        heroSection.style.transform = 'translateY(20px)';
+    window.addEventListener('resize', resize);
+    start();
+}
 
-        setTimeout(() => {
-            heroSection.style.transition = 'opacity 0.8s ease, transform 0.8s ease';
-            heroSection.style.opacity = '1';
-            heroSection.style.transform = 'translateY(0)';
-        }, 100);
-    }
-});
-
-// Navbar background change on scroll
-window.addEventListener('scroll', function() {
-    const navbar = document.querySelector('.navbar');
-    const scrollTop = window.pageYOffset || document.documentElement.scrollTop;
-
-    if (scrollTop > 50) {
-        navbar.style.backgroundColor = 'rgba(26, 26, 26, 0.98)';
-    } else {
-        navbar.style.backgroundColor = 'rgba(26, 26, 26, 0.9)';
-    }
-});
-
-// ============================================
-// Initialize
-// ============================================
-window.addEventListener('resize', resize);
-resize();
-draw();
+initBackdrop();

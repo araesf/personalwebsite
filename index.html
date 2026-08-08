@@ -3,86 +3,66 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>aesf.xyz</title>
+    <title>Ara Esfarjani</title>
+    <meta name="description" content="Ara Esfarjani, machine learning researcher based in Palo Alto, California.">
     <link rel="icon" type="image/jpeg" href="imgs/IMG_6966.jpeg">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Animated Topographic Background -->
-    <canvas id="topoCanvas"></canvas>
+    <!-- Halftone-dithered animated backdrop -->
+    <canvas id="bg" aria-hidden="true"></canvas>
 
-    <!-- Page 1: About -->
-    <main class="page">
-        <div class="page-content">
-            <div class="profile-container">
-                <img src="imgs/IMG_6966.jpeg" alt="Ara's Profile Picture" class="profile-image">
-            </div>
-            <h1 class="hero-title">hello, i'm ara</h1>
-            <div class="about-text">
-                <p>i'm 20 and currently based in los angeles, california.</p>
-                <p>when building products, i'm super interested in building awesome things that users can interact with.</p>
-                <p>i'm also a machine learning researcher. my research interests include post-training optimization, agentic AI, model compression, and model distillation.</p>
-                <p>i also have a <a href="https://medium.com/@ara.esfarjani" target="_blank">blog</a>.</p>
-            </div>
-        </div>
+    <main class="shell">
+        <header class="masthead">
+            <h1 class="display">Ara Esfarjani</h1>
+        </header>
+
+        <section class="intro">
+            <p class="lede">I'm 21, based in Palo Alto, California.</p>
+            <p>Most recently, I'm joining Axiom Math as a research engineer. Before that I worked at Coinbase on ledgers and money-movement microservices, and at other tech companies like Celestial AI, acquired by Marvell for $3.25 billion.</p>
+            <p>I'm a machine learning researcher. At SAIL, I optimize transistor sizing in analog components to produce state-of-the-art chips. I'm also interested in KV cache and decoding optimization.</p>
+            <p>I'm also a musician. I've competed internationally in viola, and recently picked up acoustic, classical, and electric guitar.</p>
+        </section>
+
+        <section class="work">
+            <h2 class="label">Experience</h2>
+            <ul class="rows">
+                <li class="row">
+                    <img src="https://www.google.com/s2/favicons?domain=axiommath.ai&sz=128" alt="" class="row-icon" loading="lazy">
+                    <a href="https://axiommath.ai" target="_blank" rel="noopener" class="row-name">Axiom Math</a>
+                    <span class="row-desc">Research Engineer Intern</span>
+                    <span class="row-year">Aug &ndash; Dec 2026</span>
+                </li>
+                <li class="row">
+                    <img src="https://www.google.com/s2/favicons?domain=coinbase.com&sz=128" alt="" class="row-icon" loading="lazy">
+                    <a href="https://www.coinbase.com" target="_blank" rel="noopener" class="row-name">Coinbase</a>
+                    <span class="row-desc">Software Engineer Intern</span>
+                    <span class="row-year">May &ndash; Aug 2026</span>
+                </li>
+                <li class="row">
+                    <img src="https://www.google.com/s2/favicons?domain=ai.stanford.edu&sz=128" alt="" class="row-icon" loading="lazy">
+                    <a href="https://ai.stanford.edu" target="_blank" rel="noopener" class="row-name">Stanford AI Lab</a>
+                    <span class="row-desc">ML for analog chip design</span>
+                    <span class="row-year">Mar 2026 &ndash; Present</span>
+                </li>
+                <li class="row">
+                    <img src="https://www.google.com/s2/favicons?domain=usc.edu&sz=128" alt="" class="row-icon" loading="lazy">
+                    <a href="https://www.usc.edu" target="_blank" rel="noopener" class="row-name">USC</a>
+                    <span class="row-desc">B.S. / M.S. Computer Engineering &amp; Computer Science</span>
+                    <span class="row-year">Exp Dec 2027</span>
+                </li>
+            </ul>
+        </section>
+
+        <footer class="tail">
+            <a href="https://www.linkedin.com/in/ara-esfarjani/" target="_blank" rel="noopener">LinkedIn</a>
+            <a href="https://github.com/araesf/" target="_blank" rel="noopener">GitHub</a>
+            <a href="mailto:esfarjaniara@gmail.com">Email</a>
+        </footer>
     </main>
-
-    <!-- Page 2: Experiences -->
-    <section class="page">
-        <div class="page-content">
-            <h2 class="section-title">Experiences</h2>
-            <div class="timeline">
-                <div class="timeline-item">
-                    <img src="https://www.google.com/s2/favicons?domain=noise.xyz&sz=128" alt="Noise Labs" class="timeline-icon">
-                    <div class="timeline-content">
-                        <a href="https://www.noise.xyz" target="_blank" class="timeline-company">noise labs</a>
-                        <span class="timeline-desc">full-stack software engineer</span>
-                    </div>
-                    <span class="timeline-year">2025</span>
-                </div>
-                <div class="timeline-item">
-                    <img src="https://www.google.com/s2/favicons?domain=usc.edu&sz=128" alt="NSIP Lab" class="timeline-icon">
-                    <div class="timeline-content">
-                        <a href="https://nseip.usc.edu" target="_blank" class="timeline-company">nsip lab</a>
-                        <span class="timeline-desc">machine learning researcher</span>
-                    </div>
-                    <span class="timeline-year">2025</span>
-                </div>
-                <div class="timeline-item">
-                    <img src="imgs/celestial-icon.jpg" alt="Celestial AI" class="timeline-icon">
-                    <div class="timeline-content">
-                        <a href="https://www.celestial.ai" target="_blank" class="timeline-company">celestial ai</a>
-                        <span class="timeline-desc">machine learning engineer intern</span>
-                    </div>
-                    <span class="timeline-year">2025</span>
-                </div>
-                <div class="timeline-item">
-                    <img src="https://www.google.com/s2/favicons?domain=pivotal.aero&sz=128" alt="Pivotal" class="timeline-icon">
-                    <div class="timeline-content">
-                        <a href="https://pivotal.aero" target="_blank" class="timeline-company">pivotal.aero</a>
-                        <span class="timeline-desc">full-stack software engineer intern</span>
-                    </div>
-                    <span class="timeline-year">2024</span>
-                </div>
-                <div class="timeline-item">
-                    <img src="https://www.google.com/s2/favicons?domain=usc.edu&sz=128" alt="USC" class="timeline-icon">
-                    <div class="timeline-content">
-                        <a href="https://www.usc.edu" target="_blank" class="timeline-company">usc</a>
-                        <span class="timeline-desc">b.s. / m.s. computer engineering & computer science</span>
-                    </div>
-                    <span class="timeline-year">exp 2027</span>
-                </div>
-            </div>
-            <div class="footer-links">
-                <a href="https://www.linkedin.com/in/ara-esfarjani/" target="_blank" class="footer-link">linkedin</a>
-                <a href="https://github.com/araesf/" target="_blank" class="footer-link">github</a>
-                <a href="mailto:aesfarja@usc.edu" class="footer-link">email</a>
-            </div>
-        </div>
-    </section>
 
     <script src="script.js"></script>
     <!-- Vercel Web Analytics -->
