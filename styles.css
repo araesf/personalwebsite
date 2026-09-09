@@ -138,15 +138,21 @@ body {
     color: var(--ink);
     font-weight: 600;
     font-size: 0.95rem;
+    white-space: nowrap;
     text-decoration: underline;
     text-underline-offset: 3px;
     text-decoration-thickness: 1px;
     text-decoration-color: var(--rule);
 }
 
+/* A row is always exactly one line: the description clips before it wraps. */
 .row-desc {
     color: var(--muted);
     font-size: 0.875rem;
+    min-width: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
 }
 
 .row-year {

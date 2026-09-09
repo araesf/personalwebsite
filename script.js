@@ -5,11 +5,14 @@
 // grid cell, and each cell is drawn as a square whose size and ink density
 // track that sample — the newsprint-dot look, generated procedurally so
 // there is no video or image to ship.
+//
+// A second, coarser field picks the cell's hue off a cosine palette. It is
+// quantized hard, so the page reads as flat blocks of colour rather than a
+// gradient — one colour per cell, held across a whole region.
 // ============================================
 
 const PALETTE = {
-    bg: [0.969, 0.965, 0.949],   // #f7f6f2
-    ink: [0.055, 0.051, 0.043]   // near-black
+    bg: [0.969, 0.965, 0.949]   // #f7f6f2
 };
 
 const PITCH = 9;        // dot cell size, CSS px
@@ -29,7 +32,6 @@ uniform vec2  uRes;
 uniform vec2  uDrift;
 uniform float uPitch;
 uniform vec3  uBg;
-uniform vec3  uInk;
 
 float hash(vec2 p) {
     p = fract(p * vec2(123.34, 456.21));
@@ -46,6 +48,12 @@ float vnoise(vec2 p) {
     float c = hash(i + vec2(0.0, 1.0));
     float d = hash(i + vec2(1.0, 1.0));
     return mix(mix(a, b, u.x), mix(c, d, u.x), u.y);
+}
+
+// Full hue wheel, so a cell can land on any colour rather than a fixed set.
+vec3 hsv2rgb(vec3 c) {
+    vec3 k = abs(fract(c.xxx + vec3(0.0, 2.0 / 3.0, 1.0 / 3.0)) * 6.0 - 3.0);
+    return c.z * mix(vec3(1.0), clamp(k - 1.0, 0.0, 1.0), c.y);
 }
 
 float fbm(vec2 p) {
@@ -91,8 +99,15 @@ void main() {
     vec2 d = abs(gl_FragCoord.xy - center);
     float mask = 1.0 - smoothstep(half_ - 1.0, half_ + 1.0, max(d.x, d.y));
 
-    float density = mask * mix(0.11, 0.34, v);
-    gl_FragColor = vec4(mix(uBg, uInk, density), 1.0);
+    // Hue is drawn per cell from the cell's own coordinate — a fixed random
+    // colour each, confetti rather than regions. Hashing the cell (not the
+    // fragment) keeps every dot solid, and keeping time out of it means the
+    // colours hold still while the field drifts underneath them.
+    float hue = hash(cell + 17.3);
+    vec3 ink = hsv2rgb(vec3(hue, 0.78, 0.88));
+
+    float density = mask * mix(0.16, 0.62, v);
+    gl_FragColor = vec4(mix(uBg, ink, density), 1.0);
 }
 `;
 
@@ -141,7 +156,6 @@ function initBackdrop() {
     const uPitch = gl.getUniformLocation(program, 'uPitch');
 
     gl.uniform3fv(gl.getUniformLocation(program, 'uBg'), PALETTE.bg);
-    gl.uniform3fv(gl.getUniformLocation(program, 'uInk'), PALETTE.ink);
 
     let dpr = 1;
 
